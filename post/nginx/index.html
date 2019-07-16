@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>nginx | Gridea</title>
+<meta name="description" content="温故而知新">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="shortcut icon" href="https://fjw3214/github.io/favicon.ico?v=1563263533362">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://unpkg.com/papercss@1.6.1/dist/paper.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://fjw3214/github.io/styles/main.css">
+
+
+  
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css" />
+  
+
+  
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+
+
+  </head>
+  <body>
+  
+    <nav class="navbar border fixed split-nav">
+  <div class="nav-brand">
+    <h3><a href="https://fjw3214/github.io">Gridea</a></h3>
+  </div>
+  <div class="collapsible">
+    <input id="collapsible1" type="checkbox" name="collapsible1">
+    <button>
+      <label for="collapsible1">
+        <div class="bar1"></div>
+        <div class="bar2"></div>
+        <div class="bar3"></div>
+      </label>
+    </button>
+    <div class="collapsible-body">
+      <ul class="inline">
+        
+          <li>
+            
+              <a href="/" class="menu">
+                首页
+              </a>
+            
+          </li>
+        
+          <li>
+            
+              <a href="/archives" class="menu">
+                归档
+              </a>
+            
+          </li>
+        
+          <li>
+            
+              <a href="/tags" class="menu">
+                标签
+              </a>
+            
+          </li>
+        
+          <li>
+            
+              <a href="/post/about" class="menu">
+                关于
+              </a>
+            
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div id="top" class="row site">
+      <div class="sm-12 md-8 col">
+        <div class="paper">
+          <article class="article">
+            <h1>nginx</h1>
+            <p class="article-meta">
+              2019-07-16
+              
+            </p>
+            
+            <div class="post-content">
+              <p>传统上基于进程或线程模型架构的web服务通过每进程或每线程处理并发连接请求，这势必会在网络和I/O操作时产生阻塞，其另一个必然结果则是对内存或CPU的利用率低下。生成一个新的进程/线程需要事先备好其运行时环境，这包括为其分配堆内存和栈内存，以及为其创建新的执行上下文等。这些操作都需要占用CPU，而且过多的进程/线程还会带来线程抖动或频繁的上下文切换，系统性能也会由此进一步下降。</p>
+<p>在设计的最初阶段，nginx的主要着眼点就是其高性能以及对物理计算资源的高密度利用，因此其采用了不同的架构模型。受启发于多种操作系统设计中基于“事件”的高级处理机制，nginx采用了模块化、事件驱动、异步、单线程及非阻塞的架构，并大量采用了多路复用及事件通知机制。在nginx中，连接请求由为数不多的几个仅包含一个线程的进程worker以高效的回环(run-loop)机制进行处理，而每个worker可以并行处理数千个的并发连接及请求。</p>
+<p>如果负载以CPU密集型应用为主，如SSL或压缩应用，则worker数应与CPU数相同；如果负载以IO密集型为主，如响应大量内容给客户端，则worker数应该为CPU个数的1.5或2倍。</p>
+<p>Nginx会按需同时运行多个进程：一个主进程(master)和几个工作进程(worker)，配置了缓存时还会有缓存加载器进程(cache loader)和缓存管理器进程(cache manager)等。所有进程均是仅含有一个线程，并主要通过“共享内存”的机制实现进程间通信。主进程以root用户身份运行，而worker、cache loader和cache manager均应以非特权用户身份运行。</p>
+<p>主进程主要完成如下工作：</p>
+<ol>
+<li>读取并验正配置信息；</li>
+<li>创建、绑定及关闭套接字；</li>
+<li>启动、终止及维护worker进程的个数；</li>
+<li>无须中止服务而重新配置工作特性；</li>
+<li>控制非中断式程序升级，启用新的二进制程序并在需要时回滚至老版本；</li>
+<li>重新打开日志文件，实现日志滚动；</li>
+<li>编译嵌入式perl脚本；</li>
+</ol>
+<p>worker进程主要完成的任务包括：</p>
+<ol>
+<li>接收、传入并处理来自客户端的连接；</li>
+<li>提供反向代理及过滤功能；</li>
+<li>nginx任何能完成的其它任务；</li>
+</ol>
+<p>cache loader进程主要完成的任务包括：</p>
+<ol>
+<li>检查缓存存储中的缓存对象；</li>
+<li>使用缓存元数据建立内存数据库；</li>
+</ol>
+<p>cache manager进程的主要任务：</p>
+<ol>
+<li>缓存的失效及过期检验；</li>
+</ol>
+<p>Nginx的配置有着几个不同的上下文：main、http、server、upstream和location(还有实现邮件服务反向代理的mail)。配置语法的格式和定义方式遵循所谓的C风格，因此支持嵌套，还有着逻辑清晰并易于创建、阅读和维护等优势。</p>
+<p>Nginx的代码是由一个核心和一系列的模块组成, 核心主要用于提供Web Server的基本功能，以及Web和Mail反向代理的功能；还用于启用网络协议，创建必要的运行时环境以及确保不同的模块之间平滑地进行交互。不过，大多跟协议相关的功能和某应用特有的功能都是由nginx的模块实现的。这些功能模块大致可以分为事件模块、阶段性处理器、输出过滤器、变量处理器、协议、upstream和负载均衡几个类别，这些共同组成了nginx的http功能。事件模块主要用于提供OS独立的(不同操作系统的事件机制有所不同)事件通知机制如kqueue或epoll等。协议模块则负责实现nginx通过http、tls/ssl、smtp、pop3以及imap与对应的客户端建立会话。</p>
+<p>在nginx内部，进程间的通信是通过模块的pipeline或chain实现的；换句话说，每一个功能或操作都由一个模块来实现。例如，压缩、通过FastCGI或uwsgi协议与upstream服务器通信，以及与memcached建立会话等。</p>
+<p>一、安装Nginx：</p>
+<p>1、解决依赖关系</p>
+<p>编译安装nginx需要事先需要安装开发包组&quot;Development Tools&quot;和 &quot;Development Libraries&quot;。同时，还需要专门安装pcre-devel包：</p>
+<h1 id="yum-y-install-pcre-devel">yum -y install pcre-devel</h1>
+<p>2、安装</p>
+<p>首先添加用户nginx，实现以之运行nginx服务进程：</p>
+<h1 id="groupadd-r-nginx">groupadd -r nginx</h1>
+<h1 id="useradd-r-g-nginx-nginx">useradd -r -g nginx nginx</h1>
+<p>接着开始编译和安装：</p>
+<h1 id="configure">./configure \</h1>
+<p>--prefix=/usr/local/nginx <br>
+--sbin-path=/usr/local/nginx/sbin/nginx <br>
+--conf-path=/etc/nginx/nginx.conf <br>
+--error-log-path=/var/log/nginx/error.log <br>
+--http-log-path=/var/log/nginx/access.log <br>
+--pid-path=/var/run/nginx/nginx.pid  <br>
+--lock-path=/var/lock/nginx.lock <br>
+--user=nginx <br>
+--group=nginx <br>
+--with-http_ssl_module <br>
+--with-http_flv_module <br>
+--with-http_stub_status_module <br>
+--with-http_gzip_static_module <br>
+--http-client-body-temp-path=/var/tmp/nginx/client/ <br>
+--http-proxy-temp-path=/var/tmp/nginx/proxy/ <br>
+--http-fastcgi-temp-path=/var/tmp/nginx/fcgi/ <br>
+--http-uwsgi-temp-path=/var/tmp/nginx/uwsgi <br>
+--http-scgi-temp-path=/var/tmp/nginx/scgi <br>
+--with-pcre</p>
+<h1 id="make-make-install">make &amp;&amp; make install</h1>
+<p>说明：如果想使用nginx的perl模块，可以通过为configure脚本添加--with-http_perl_module选项来实现，但目前此模块仍处于实验性使用阶段，可能会在运行中出现意外，因此，其实现方式这里不再介绍。如果想使用基于nginx的cgi功能，也可以基于FCGI来实现，具体实现方法请参照网上的文档。</p>
+<p>3、为nginx提供SysV init脚本:</p>
+<p>新建文件/etc/rc.d/init.d/nginx，内容如下：<br>
+#!/bin/sh</p>
+<h1 id=""></h1>
+<h1 id="nginx-this-script-starts-and-stops-the-nginx-daemon">nginx - this script starts and stops the nginx daemon</h1>
+<h1 id="-2"></h1>
+<h1 id="chkconfig-85-15">chkconfig:   - 85 15</h1>
+<h1 id="description-nginx-is-an-https-server-https-reverse">description:  Nginx is an HTTP(S) server, HTTP(S) reverse \</h1>
+<h1 id="proxy-and-imappop3-proxy-server">proxy and IMAP/POP3 proxy server</h1>
+<h1 id="processname-nginx">processname: nginx</h1>
+<h1 id="config-etcnginxnginxconf">config:      /etc/nginx/nginx.conf</h1>
+<h1 id="config-etcsysconfignginx">config:      /etc/sysconfig/nginx</h1>
+<h1 id="pidfile-varrunnginxpid">pidfile:     /var/run/nginx.pid</h1>
+<h1 id="source-function-library">Source function library.</h1>
+<p>. /etc/rc.d/init.d/functions</p>
+<h1 id="source-networking-configuration">Source networking configuration.</h1>
+<p>. /etc/sysconfig/network</p>
+<h1 id="check-that-networking-is-up">Check that networking is up.</h1>
+<p>[ &quot;$NETWORKING&quot; = &quot;no&quot; ] &amp;&amp; exit 0</p>
+<p>nginx=&quot;/usr/sbin/nginx&quot;<br>
+prog=$(basename $nginx)</p>
+<p>NGINX_CONF_FILE=&quot;/etc/nginx/nginx.conf&quot;</p>
+<p>[ -f /etc/sysconfig/nginx ] &amp;&amp; . /etc/sysconfig/nginx</p>
+<p>lockfile=/var/lock/subsys/nginx</p>
+<p>make_dirs() {</p>
+<h1 id="make-required-directories">make required directories</h1>
+<p>user=<code>nginx -V 2&gt;&amp;1 | grep &quot;configure arguments:&quot; | sed 's/[^*]*--user=\([^ ]*\).*/\1/g' -</code><br>
+options=<code>$nginx -V 2&gt;&amp;1 | grep 'configure arguments:'</code><br>
+for opt in $options; do<br>
+if [ <code>echo $opt | grep '.*-temp-path'</code> ]; then<br>
+value=<code>echo $opt | cut -d &quot;=&quot; -f 2</code><br>
+if [ ! -d &quot;$value&quot; ]; then<br>
+# echo &quot;creating&quot; $value<br>
+mkdir -p $value &amp;&amp; chown -R $user $value<br>
+fi<br>
+fi<br>
+done<br>
+}</p>
+<p>start() {<br>
+[ -x $nginx ] || exit 5<br>
+[ -f $NGINX_CONF_FILE ] || exit 6<br>
+make_dirs<br>
+echo -n $&quot;Starting $prog: &quot;<br>
+daemon $nginx -c <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>N</mi><mi>G</mi><mi>I</mi><mi>N</mi><msub><mi>X</mi><mi>C</mi></msub><mi>O</mi><mi>N</mi><msub><mi>F</mi><mi>F</mi></msub><mi>I</mi><mi>L</mi><mi>E</mi><mi>r</mi><mi>e</mi><mi>t</mi><mi>v</mi><mi>a</mi><mi>l</mi><mo>=</mo></mrow><annotation encoding="application/x-tex">NGINX_CONF_FILE
+    retval=</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.84444em;vertical-align:-0.15em;"></span><span class="mord mathdefault" style="margin-right:0.10903em;">N</span><span class="mord mathdefault">G</span><span class="mord mathdefault" style="margin-right:0.07847em;">I</span><span class="mord mathdefault" style="margin-right:0.10903em;">N</span><span class="mord"><span class="mord mathdefault" style="margin-right:0.07847em;">X</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.32833099999999993em;"><span style="top:-2.5500000000000003em;margin-left:-0.07847em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathdefault mtight" style="margin-right:0.07153em;">C</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord mathdefault" style="margin-right:0.02778em;">O</span><span class="mord mathdefault" style="margin-right:0.10903em;">N</span><span class="mord"><span class="mord mathdefault" style="margin-right:0.13889em;">F</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.32833099999999993em;"><span style="top:-2.5500000000000003em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathdefault mtight" style="margin-right:0.13889em;">F</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord mathdefault" style="margin-right:0.07847em;">I</span><span class="mord mathdefault">L</span><span class="mord mathdefault" style="margin-right:0.05764em;">E</span><span class="mord mathdefault" style="margin-right:0.02778em;">r</span><span class="mord mathdefault">e</span><span class="mord mathdefault">t</span><span class="mord mathdefault" style="margin-right:0.03588em;">v</span><span class="mord mathdefault">a</span><span class="mord mathdefault" style="margin-right:0.01968em;">l</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span></span></span></span>?<br>
+echo<br>
+[ $retval -eq 0 ] &amp;&amp; touch $lockfile<br>
+return $retval<br>
+}</p>
+<p>stop() {<br>
+echo -n $&quot;Stopping $prog: &quot;<br>
+killproc <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>p</mi><mi>r</mi><mi>o</mi><mi>g</mi><mo>−</mo><mi>Q</mi><mi>U</mi><mi>I</mi><mi>T</mi><mi>r</mi><mi>e</mi><mi>t</mi><mi>v</mi><mi>a</mi><mi>l</mi><mo>=</mo></mrow><annotation encoding="application/x-tex">prog -QUIT
+    retval=</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7777700000000001em;vertical-align:-0.19444em;"></span><span class="mord mathdefault">p</span><span class="mord mathdefault" style="margin-right:0.02778em;">r</span><span class="mord mathdefault">o</span><span class="mord mathdefault" style="margin-right:0.03588em;">g</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.8888799999999999em;vertical-align:-0.19444em;"></span><span class="mord mathdefault">Q</span><span class="mord mathdefault" style="margin-right:0.10903em;">U</span><span class="mord mathdefault" style="margin-right:0.07847em;">I</span><span class="mord mathdefault" style="margin-right:0.13889em;">T</span><span class="mord mathdefault" style="margin-right:0.02778em;">r</span><span class="mord mathdefault">e</span><span class="mord mathdefault">t</span><span class="mord mathdefault" style="margin-right:0.03588em;">v</span><span class="mord mathdefault">a</span><span class="mord mathdefault" style="margin-right:0.01968em;">l</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span></span></span></span>?<br>
+echo<br>
+[ $retval -eq 0 ] &amp;&amp; rm -f $lockfile<br>
+return $retval<br>
+}</p>
+<p>restart() {<br>
+configtest || return $?<br>
+stop<br>
+sleep 1<br>
+start<br>
+}</p>
+<p>reload() {<br>
+configtest || return $?<br>
+echo -n $&quot;Reloading $prog: &quot;<br>
+killproc <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>n</mi><mi>g</mi><mi>i</mi><mi>n</mi><mi>x</mi><mo>−</mo><mi>H</mi><mi>U</mi><mi>P</mi><mi>R</mi><mi>E</mi><mi>T</mi><mi>V</mi><mi>A</mi><mi>L</mi><mo>=</mo></mrow><annotation encoding="application/x-tex">nginx -HUP
+    RETVAL=</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.85396em;vertical-align:-0.19444em;"></span><span class="mord mathdefault">n</span><span class="mord mathdefault" style="margin-right:0.03588em;">g</span><span class="mord mathdefault">i</span><span class="mord mathdefault">n</span><span class="mord mathdefault">x</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.08125em;">H</span><span class="mord mathdefault" style="margin-right:0.10903em;">U</span><span class="mord mathdefault" style="margin-right:0.13889em;">P</span><span class="mord mathdefault" style="margin-right:0.00773em;">R</span><span class="mord mathdefault" style="margin-right:0.05764em;">E</span><span class="mord mathdefault" style="margin-right:0.13889em;">T</span><span class="mord mathdefault" style="margin-right:0.22222em;">V</span><span class="mord mathdefault">A</span><span class="mord mathdefault">L</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span></span></span></span>?<br>
+echo<br>
+}</p>
+<p>force_reload() {<br>
+restart<br>
+}</p>
+<p>configtest() {<br>
+$nginx -t -c $NGINX_CONF_FILE<br>
+}</p>
+<p>rh_status() {<br>
+status $prog<br>
+}</p>
+<p>rh_status_q() {<br>
+rh_status &gt;/dev/null 2&gt;&amp;1<br>
+}</p>
+<p>case &quot;$1&quot; in<br>
+start)<br>
+rh_status_q &amp;&amp; exit 0<br>
+$1<br>
+;;<br>
+stop)<br>
+rh_status_q || exit 0<br>
+$1<br>
+;;<br>
+restart|configtest)<br>
+$1<br>
+;;<br>
+reload)<br>
+rh_status_q || exit 7<br>
+$1<br>
+;;<br>
+force-reload)<br>
+force_reload<br>
+;;<br>
+status)<br>
+rh_status<br>
+;;<br>
+condrestart|try-restart)<br>
+rh_status_q || exit 0<br>
+;;<br>
+*)<br>
+echo $&quot;Usage: $0 {start|stop|status|restart|condrestart|try-restart|reload|force-reload|configtest}&quot;<br>
+exit 2<br>
+esac</p>
+<p>而后为此脚本赋予执行权限：</p>
+<h1 id="chmod-x-etcrcdinitdnginx">chmod +x /etc/rc.d/init.d/nginx</h1>
+<p>添加至服务管理列表，并让其开机自动启动：</p>
+<h1 id="chkconfig-add-nginx">chkconfig --add nginx</h1>
+<h1 id="chkconfig-nginx-on">chkconfig nginx on</h1>
+<p>而后就可以启动服务并测试了：</p>
+<h1 id="service-nginx-start">service nginx start</h1>
+<p>二、安装mysql-5.5.28</p>
+<p>1、准备数据存放的文件系统</p>
+<p>新建一个逻辑卷，并将其挂载至特定目录即可。这里不再给出过程。</p>
+<p>这里假设其逻辑卷的挂载目录为/mydata，而后需要创建/mydata/data目录做为mysql数据的存放目录。</p>
+<p>2、新建用户以安全方式运行进程：</p>
+<h1 id="groupadd-r-mysql">groupadd -r mysql</h1>
+<h1 id="useradd-g-mysql-r-s-sbinnologin-m-d-mydatadata-mysql">useradd -g mysql -r -s /sbin/nologin -M -d /mydata/data mysql</h1>
+<h1 id="chown-r-mysqlmysql-mydatadata">chown -R mysql:mysql /mydata/data</h1>
+<p>3、安装并初始化mysql-5.5.28</p>
+<p>首先下载平台对应的mysql版本至本地，这里是32位平台，因此，选择的为mysql-5.5.28-linux2.6-i686.tar.gz，其下载位置为ftp://172.16.0.1/pub/Sources/mysql-5.5。</p>
+<h1 id="tar-xf-mysql-5528-linux26-i686targz-c-usrlocal">tar xf mysql-5.5.28-linux2.6-i686.tar.gz -C /usr/local</h1>
+<h1 id="cd-usrlocal">cd /usr/local/</h1>
+<h1 id="ln-sv-mysql-5524-linux26-i686-mysql">ln -sv mysql-5.5.24-linux2.6-i686  mysql</h1>
+<h1 id="cd-mysql">cd mysql</h1>
+<h1 id="chown-r-mysqlmysql">chown -R mysql:mysql  .</h1>
+<h1 id="scriptsmysql_install_db-usermysql-datadirmydatadata">scripts/mysql_install_db --user=mysql --datadir=/mydata/data</h1>
+<h1 id="chown-r-root">chown -R root  .</h1>
+<p>4、为mysql提供主配置文件：</p>
+<h1 id="cd-usrlocalmysql">cd /usr/local/mysql</h1>
+<h1 id="cp-support-filesmy-largecnf-etcmycnf">cp support-files/my-large.cnf  /etc/my.cnf</h1>
+<p>并修改此文件中thread_concurrency的值为你的CPU个数乘以2，比如这里使用如下行：<br>
+thread_concurrency = 2</p>
+<p>另外还需要添加如下行指定mysql数据文件的存放位置：<br>
+datadir = /mydata/data</p>
+<p>5、为mysql提供sysv服务脚本：</p>
+<h1 id="cd-usrlocalmysql-2">cd /usr/local/mysql</h1>
+<h1 id="cp-support-filesmysqlserver-etcrcdinitdmysqld">cp support-files/mysql.server  /etc/rc.d/init.d/mysqld</h1>
+<p>添加至服务列表：</p>
+<h1 id="chkconfig-add-mysqld">chkconfig --add mysqld</h1>
+<h1 id="chkconfig-mysqld-on">chkconfig mysqld on</h1>
+<p>而后就可以启动服务测试使用了。</p>
+<p>为了使用mysql的安装符合系统使用规范，并将其开发组件导出给系统使用，这里还需要进行如下步骤：</p>
+<p>6、输出mysql的man手册至man命令的查找路径：</p>
+<p>编辑/etc/man.config，添加如下行即可：<br>
+MANPATH  /usr/local/mysql/man</p>
+<p>7、输出mysql的头文件至系统头文件路径/usr/include：</p>
+<p>这可以通过简单的创建链接实现：</p>
+<h1 id="ln-sv-usrlocalmysqlinclude-usrincludemysql">ln -sv /usr/local/mysql/include  /usr/include/mysql</h1>
+<p>8、输出mysql的库文件给系统库查找路径：</p>
+<h1 id="echo-usrlocalmysqllib-etcldsoconfdmysqlconf">echo '/usr/local/mysql/lib' &gt; /etc/ld.so.conf.d/mysql.conf</h1>
+<p>而后让系统重新载入系统库：</p>
+<h1 id="ldconfig">ldconfig</h1>
+<p>9、修改PATH环境变量，让系统可以直接使用mysql的相关命令。具体实现过程这里不再给出。</p>
+<p>三、编译安装php-5.4.4</p>
+<p>1、解决依赖关系：</p>
+<p>请配置好yum源（可以是本地系统光盘）后执行如下命令：</p>
+<h1 id="yum-y-groupinstall-x-software-development">yum -y groupinstall &quot;X Software Development&quot;</h1>
+<p>如果想让编译的php支持mcrypt、mhash扩展和libevent，此处还需要下载ftp://172.16.0.1/pub/Sources/ngnix目录中的如下几个rpm包并安装之：<br>
+libmcrypt-2.5.8-4.el5.centos.i386.rpm<br>
+libmcrypt-devel-2.5.8-4.el5.centos.i386.rpm<br>
+mhash-0.9.9-1.el5.centos.i386.rpm<br>
+mhash-devel-0.9.9-1.el5.centos.i386.rpm<br>
+mcrypt-2.6.8-1.el5.i386.rpm</p>
+<p>最好使用升级的方式安装上面的rpm包，命令格式如下：</p>
+<h1 id="rpm-uvh">rpm -Uvh</h1>
+<p>另外，也可以根据需要安装libevent，系统一般会自带libevent，但版本有些低。因此可以升级安装之，它包含如下两个rpm包。<br>
+libevent-2.0.17-2.i386.rpm<br>
+libevent-devel-2.0.17-2.i386.rpm</p>
+<p>说明：libevent是一个异步事件通知库文件，其API提供了在某文件描述上发生某事件时或其超时时执行回调函数的机制，它主要用来替换事件驱动的网络服务器上的event loop机制。目前来说， libevent支持/dev/poll、kqueue、select、poll、epoll及Solaris的event ports。</p>
+<p>2、编译安装php-5.4.4</p>
+<p>首先下载源码包至本地目录，下载位置ftp://172.16.0.1/pub/Sources/new_lamp。</p>
+<h1 id="tar-xf-php-544tarbz2">tar xf php-5.4.4.tar.bz2</h1>
+<h1 id="cd-php-544">cd php-5.4.4</h1>
+<h1 id="configure-prefixusrlocalphp-with-mysqlusrlocalmysql-with-openssl-enable-fpm-enable-sockets-enable-sysvshm-with-mysqliusrlocalmysqlbinmysql_config-enable-mbstring-with-freetype-dir-with-jpeg-dir-with-png-dir-with-zlib-dir-with-libxml-dirusr-enable-xml-with-mhash-with-mcrypt-with-config-file-pathetc-with-config-file-scan-diretcphpd-with-bz2-with-curl">./configure --prefix=/usr/local/php --with-mysql=/usr/local/mysql --with-openssl --enable-fpm --enable-sockets --enable-sysvshm  --with-mysqli=/usr/local/mysql/bin/mysql_config --enable-mbstring --with-freetype-dir --with-jpeg-dir --with-png-dir --with-zlib-dir --with-libxml-dir=/usr --enable-xml  --with-mhash --with-mcrypt  --with-config-file-path=/etc --with-config-file-scan-dir=/etc/php.d --with-bz2 --with-curl</h1>
+<p>说明：如果前面第1步解决依赖关系时安装mcrypt相关的两个rpm包，此./configure命令还可以带上--with-mcrypt选项以让php支持mycrpt扩展。--with-snmp选项则用于实现php的SNMP扩展，但此功能要求提前安装net-snmp相关软件包。</p>
+<h1 id="make">make</h1>
+<h1 id="make-test">make test</h1>
+<h1 id="make-intall">make intall</h1>
+<p>为php提供配置文件：</p>
+<h1 id="cp-phpini-production-etcphpini">cp php.ini-production /etc/php.ini</h1>
+<p>为php-fpm提供Sysv init脚本，并将其添加至服务列表：</p>
+<h1 id="cp-sapifpminitdphp-fpm-etcrcdinitdphp-fpm">cp sapi/fpm/init.d.php-fpm  /etc/rc.d/init.d/php-fpm</h1>
+<h1 id="chmod-x-etcrcdinitdphp-fpm">chmod +x /etc/rc.d/init.d/php-fpm</h1>
+<h1 id="chkconfig-add-php-fpm">chkconfig --add php-fpm</h1>
+<h1 id="chkconfig-php-fpm-on">chkconfig php-fpm on</h1>
+<p>为php-fpm提供配置文件：</p>
+<h1 id="cp-usrlocalphpetcphp-fpmconfdefault-usrlocalphpetcphp-fpmconf">cp /usr/local/php/etc/php-fpm.conf.default /usr/local/php/etc/php-fpm.conf</h1>
+<p>编辑php-fpm的配置文件：</p>
+<h1 id="vim-usrlocalphpetcphp-fpmconf">vim /usr/local/php/etc/php-fpm.conf</h1>
+<p>配置fpm的相关选项为你所需要的值，并启用pid文件（如下最后一行）：<br>
+pm.max_children = 150<br>
+pm.start_servers = 8<br>
+pm.min_spare_servers = 5<br>
+pm.max_spare_servers = 10<br>
+pid = /usr/local/php/var/run/php-fpm.pid</p>
+<p>接下来就可以启动php-fpm了：</p>
+<h1 id="service-php-fpm-start">service php-fpm start</h1>
+<p>使用如下命令来验正（如果此命令输出有中几个php-fpm进程就说明启动成功了）：</p>
+<h1 id="ps-aux-grep-php-fpm">ps aux | grep php-fpm</h1>
+<p>四、整合nginx和php5</p>
+<p>1、编辑/etc/nginx/nginx.conf，启用如下选项：<br>
+location ~ .php$ {<br>
+root           html;<br>
+fastcgi_pass   127.0.0.1:9000;<br>
+fastcgi_index  index.php;<br>
+fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;<br>
+include        fastcgi_params;<br>
+}</p>
+<p>2、编辑/etc/nginx/fastcgi_params，将其内容更改为如下内容：<br>
+fastcgi_param  GATEWAY_INTERFACE  CGI/1.1;<br>
+fastcgi_param  SERVER_SOFTWARE    nginx;<br>
+fastcgi_param  QUERY_STRING       $query_string;<br>
+fastcgi_param  REQUEST_METHOD     $request_method;<br>
+fastcgi_param  CONTENT_TYPE       $content_type;<br>
+fastcgi_param  CONTENT_LENGTH     $content_length;<br>
+fastcgi_param  SCRIPT_FILENAME    <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>d</mi><mi>o</mi><mi>c</mi><mi>u</mi><mi>m</mi><mi>e</mi><mi>n</mi><msub><mi>t</mi><mi>r</mi></msub><mi>o</mi><mi>o</mi><mi>t</mi></mrow><annotation encoding="application/x-tex">document_root</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.84444em;vertical-align:-0.15em;"></span><span class="mord mathdefault">d</span><span class="mord mathdefault">o</span><span class="mord mathdefault">c</span><span class="mord mathdefault">u</span><span class="mord mathdefault">m</span><span class="mord mathdefault">e</span><span class="mord mathdefault">n</span><span class="mord"><span class="mord mathdefault">t</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.151392em;"><span style="top:-2.5500000000000003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathdefault mtight" style="margin-right:0.02778em;">r</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord mathdefault">o</span><span class="mord mathdefault">o</span><span class="mord mathdefault">t</span></span></span></span>fastcgi_script_name;<br>
+fastcgi_param  SCRIPT_NAME        $fastcgi_script_name;<br>
+fastcgi_param  REQUEST_URI        $request_uri;<br>
+fastcgi_param  DOCUMENT_URI       $document_uri;<br>
+fastcgi_param  DOCUMENT_ROOT      $document_root;<br>
+fastcgi_param  SERVER_PROTOCOL    $server_protocol;<br>
+fastcgi_param  REMOTE_ADDR        $remote_addr;<br>
+fastcgi_param  REMOTE_PORT        $remote_port;<br>
+fastcgi_param  SERVER_ADDR        $server_addr;<br>
+fastcgi_param  SERVER_PORT        $server_port;<br>
+fastcgi_param  SERVER_NAME        $server_name;</p>
+<p>并在所支持的主页面格式中添加php格式的主页，类似如下：<br>
+location / {<br>
+root   html;<br>
+index  index.php index.html index.htm;<br>
+}</p>
+<p>而后重新载入nginx的配置文件：</p>
+<h1 id="service-nginx-reload">service nginx reload</h1>
+<p>3、在/usr/html新建index.php的测试页面，测试php是否能正常工作：</p>
+<h1 id="cat-usrhtmlindexphp-eof">cat &gt; /usr/html/index.php &lt;&lt; EOF</h1>
+<?php
+phpinfo();
+?>
+<p>接着就可以通过浏览器访问此测试页面了。</p>
+<p>五、安装xcache，为php加速：</p>
+<p>1、安装</p>
+<h1 id="tar-xf-xcache-200targz">tar xf xcache-2.0.0.tar.gz</h1>
+<h1 id="cd-xcache-200">cd xcache-2.0.0</h1>
+<h1 id="usrlocalphpbinphpize">/usr/local/php/bin/phpize</h1>
+<h1 id="configure-enable-xcache-with-php-configusrlocalphpbinphp-config">./configure --enable-xcache --with-php-config=/usr/local/php/bin/php-config</h1>
+<h1 id="make-make-install-2">make &amp;&amp; make install</h1>
+<p>安装结束时，会出现类似如下行：<br>
+Installing shared extensions:     /usr/local/php/lib/php/extensions/no-debug-zts-20100525/</p>
+<p>2、编辑php.ini，整合php和xcache：</p>
+<p>首先将xcache提供的样例配置导入php.ini</p>
+<h1 id="mkdir-etcphpd">mkdir /etc/php.d</h1>
+<h1 id="cp-xcacheini-etcphpd">cp xcache.ini /etc/php.d</h1>
+<p>说明：xcache.ini文件在xcache的源码目录中。</p>
+<p>接下来编辑/etc/php.d/xcache.ini，找到zend_extension开头的行，修改为如下行：<br>
+zend_extension = /usr/local/php/lib/php/extensions/no-debug-zts-20100525/xcache.so</p>
+<p>注意：如果php.ini文件中有多条zend_extension指令行，要确保此新增的行排在第一位。</p>
+<p>3、重新启动php-fpm</p>
+<h1 id="service-php-fpm-restart">service php-fpm restart</h1>
+<p>六、补充说明</p>
+<p>如果要在SSL中使用php，需要在php的location中添加此选项：</p>
+<p>fastcgi_param HTTPS on;</p>
+<p>补充阅读材料：</p>
+<p>Events is one of paradigms to achieve asynchronous execution. But not all asynchronous systems use events. That is about semantic meaning of these two - one is super-entity of another.</p>
+<p>epoll and aio use different metaphors:</p>
+<p>epoll is a blocking operation (epoll_wait()) - you block the thread until some event happens and then you dispatch the event to different procedures/functions/branches in your code.</p>
+<p>In AIO you pass address of you callback function (completion routine) to the system and the system calls your function when something happens.</p>
+<p>Problem with AIO is that your callback function code runs from system thread and so on top of system stack. A few problems with that as you can imagine.</p>
+
+            </div>
+          </article>
+        </div>
+        <div class="paper" data-aos="fade-in">
+          
+            <div class="next-post">
+              <div class="next">
+                下一篇
+              </div>
+              <a href="https://fjw3214/github.io/post/hello-gridea">
+                <h3 class="post-title">
+                  Hello Gridea
+                </h3>
+              </a>
+            </div>
+          
+        </div>
+        
+          
+            <div class="paper" data-aos="fade-in">
+              <div id="gitalk-container"></div>
+            </div>
+          
+
+          
+        
+      </div>
+
+      <div class="sm-12 md-4 col sidebar">
+  <div class="paper info-container">
+    <img src="https://fjw3214/github.io/images/avatar.png?v=1563263533362" class="no-responsive avatar">
+    <div class="text-muted">温故而知新</div>
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+  </div>
+  <div class="paper">
+    <div class="sidebar-title">
+      最新文章
+    </div>
+    <div class="row">
+      <ul>
+        
+          
+            <li>
+              <a href="https://fjw3214/github.io/post/nginx">nginx</a>
+            </li>
+          
+        
+          
+            <li>
+              <a href="https://fjw3214/github.io/post/hello-gridea">Hello Gridea</a>
+            </li>
+          
+        
+      </ul>
+    </div>
+  </div>
+  <div class="paper">
+    <div class="sidebar-title">
+      标签列表
+    </div>
+    <div class="row">
+      
+        <a href="https://fjw3214/github.io/tag/cWf8bfXHb" class="badge secondary">
+          Gridea
+        </a>
+      
+    </div>
+  </div>
+  <div class="paper">
+    Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://fjw3214/github.io/atom.xml" target="_blank">RSS</a>
+  </div>
+</div>
+
+
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+
+<script type="application/javascript">
+
+AOS.init();
+
+hljs.initHighlightingOnLoad()
+
+</script>
+
+
+
+  
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+
+      var gitalk = new Gitalk({
+        clientID: '85a6470321db0d910717',
+        clientSecret: '813321dba20f74fc6b6de7cf3bf8c688661fd76b4',
+        repo: 'github.io',
+        owner: 'fjw3214',
+        admin: ['fjw3214'],
+        id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+        distractionFreeMode: false  // Facebook-like distraction free mode
+      })
+
+      gitalk.render('gitalk-container')
+
+    </script>
+  
+
+  
+
+
+
+
+  </body>
+</html>
